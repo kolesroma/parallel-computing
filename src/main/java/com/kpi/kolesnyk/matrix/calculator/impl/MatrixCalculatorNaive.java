@@ -1,6 +1,9 @@
-package com.kpi.kolesnyk.matrix;
+package com.kpi.kolesnyk.matrix.calculator.impl;
 
-public class MatrixCalculatorNaive implements MatrixCalculator {
+import com.kpi.kolesnyk.matrix.calculator.MatrixCalculatorCommon;
+import com.kpi.kolesnyk.matrix.record.Result;
+
+public class MatrixCalculatorNaive extends MatrixCalculatorCommon {
     private final int[][] matrix1;
     private final int[][] matrix2;
 
@@ -30,19 +33,5 @@ public class MatrixCalculatorNaive implements MatrixCalculator {
         }
         result = new Result(multiplied);
         return result;
-    }
-
-    @Override
-    public void print() {
-        if (result == null) {
-            throw new IllegalArgumentException("Method multiply() should be called before");
-        }
-        int[][] matrix = result.getMatrix();
-        for (int[] line : matrix) {
-            for (int j = 0; j < matrix[0].length; j++) {
-                System.out.print(line[j] + " ");
-            }
-            System.out.println();
-        }
     }
 }
