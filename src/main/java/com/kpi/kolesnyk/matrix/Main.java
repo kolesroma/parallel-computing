@@ -7,15 +7,25 @@ import com.kpi.kolesnyk.matrix.calculator.impl.MatrixCalculatorStriped;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Random;
 
 public class Main {
     public static void main(String[] args) {
-        int[][] matrix1 = {{1, 2, 3}, {4, 5, 6}};
-        int[][] matrix2 = {{7, 8}, {9, 10}, {11, 12}};
+        int[][] matrix = createMatrix(500, 500);
 
-        measureTimeForMatrixCalculator(new MatrixCalculatorNaive(matrix1, matrix2));
-        measureTimeForMatrixCalculator(new MatrixCalculatorFox(matrix1, matrix2, 2));
-        measureTimeForMatrixCalculator(new MatrixCalculatorStriped(matrix1, matrix2, 1));
+        measureTimeForMatrixCalculator(new MatrixCalculatorNaive(matrix, matrix));
+        measureTimeForMatrixCalculator(new MatrixCalculatorFox(matrix, matrix, 100));
+        measureTimeForMatrixCalculator(new MatrixCalculatorStriped(matrix, matrix, 250));
+    }
+
+    private static int[][] createMatrix(int a, int b) {
+        int[][] matrix = new int[a][b];
+        for (int i = 0; i < a; i++) {
+            for (int j = 0; j < b; j++) {
+                matrix[i][j] = new Random().nextInt(99);
+            }
+        }
+        return matrix;
     }
 
     private static void measureTimeForMatrixCalculator(MatrixCalculator matrixCalculator) {

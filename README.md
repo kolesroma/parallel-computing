@@ -9,3 +9,10 @@ This is a program that multiplies matrices in parallel. Algorithms used:
 - Naive
 - Striped
 - Fox
+
+For matrix 1000*1000 (multiplied by itself)
+
+|              | Naive implementation | Fox algorithm | Striped algorithm |
+|--------------|----------------------|---------------|-------------------|
+| Time, millis | 5511                 | 4295          | 3368              |
+| Cluster size | -                    | 500           | 500               |
