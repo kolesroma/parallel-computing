@@ -1,4 +1,4 @@
-package com.kpi.kolesnyk.priority.symbol;
+package com.kpi.kolesnyk.priority.counter;
 
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;

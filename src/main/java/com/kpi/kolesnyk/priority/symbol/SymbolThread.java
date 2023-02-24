@@ -1,14 +1,21 @@
 package com.kpi.kolesnyk.priority.symbol;
 
-public abstract class SymbolThread extends Thread {
-    abstract String printSymbol();
+public class SymbolThread extends Thread {
+    private final String symbol;
+
+    public SymbolThread(String symbol) {
+        this.symbol = symbol;
+    }
 
     @Override
     public void run() {
         for (int i = 0; i < 100; i++) {
-            System.out.println(printSymbol());
             try {
-                Thread.sleep(1);
+                synchronized (System.out) {
+                    System.out.println(symbol);
+                    System.out.notify();
+                    System.out.wait(2000);
+                }
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
