@@ -1,36 +1,41 @@
 package com.kpi.kolesnyk.lockers.bank;
 
-import java.util.Arrays;
+import java.util.*;
 
 public class Bank {
     public static final int NTEST = 10000;
-    private final int[] accounts;
+    private final List<Integer> accounts;
     private long ntransacts;
 
     public Bank(int n, int initialBalance) {
-        accounts = new int[n];
-        Arrays.fill(accounts, initialBalance);
+        accounts = Collections.synchronizedList(new ArrayList<>());
+        for (int i = 0; i < n; i++) {
+            accounts.add(initialBalance);
+        }
         ntransacts = 0;
     }
 
-    public synchronized void transfer(int from, int to, int amount) {
-        accounts[from] -= amount;
-        accounts[to] += amount;
-        ntransacts++;
-        if (ntransacts % NTEST == 0) {
+    public void transfer(int from, int to, int amount) {
+        synchronized (accounts) {
+            accounts.set(from, accounts.get(from) - amount);
+            accounts.set(to, accounts.get(to) + amount);
+        }
+        if (ntransacts++ % NTEST == 0) {
             test();
         }
     }
 
-    public synchronized void test() {
-        int sum = 0;
-        for (int account : accounts) {
-            sum += account;
+    public void test() {
+        synchronized (accounts) {
+            int sum = 0;
+            for (int account : accounts) {
+                sum += account;
+            }
+            System.out.println("Transactions:" + ntransacts + " Sum: " + sum);
         }
-        System.out.println("Transactions:" + ntransacts + " Sum: " + sum);
     }
 
     public int size() {
-        return accounts.length;
+        return accounts.size();
     }
 }
