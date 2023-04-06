@@ -18,3 +18,20 @@ For matrix 1000*1000 (multiplied by itself)
 |--------------|----------------------|---------------|-------------------|
 | Time, millis | 5511                 | 4295          | 3368              |
 | Cluster size | -                    | 500           | 500               |
+
+## Lockers
+### Bank
+This is a bank program that works incorrect. Money is leaking. Used `synchronizedList` and lockers so program works correct.
+### Journal
+Used `ConcurrentLinkedQueue` and `LinkedBlockingQueue`. Implement an electronic group journal that stores grades in one discipline for three groups of students. Every week, the lecturer and his 3 assistants give grades in the discipline on a 100-point scale.
+### Producer
+Used `Guarded blocks`. Threads often have to coordinate their actions. The most common coordination idiom is the guarded block. Such a block begins by polling a condition that must be true before the block can proceed. There are a number of steps to follow in order to do this correctly.
+
+## Fork Join
+Work stealing was introduced in Java with the aim of reducing contention in multithreaded applications. This is done using the fork/join framework.
+### Statistics
+Used `ForkJoinPool` and `RecursiveAction` to build a statistical text analysis algorithm and determine the characteristics of the random variable "word length in characters". 
+### Same words
+Have got a folder as input. Children files are opened in new threads. Used `ForkJoinPool` and `RecursiveAction` to develop and implement an algorithm for finding common words in text documents.
+### Find file
+Same words are found in `Folder` as input. Some files in folder are expected to contain the `KEYWORD`. So files that meet the requirements are found.
