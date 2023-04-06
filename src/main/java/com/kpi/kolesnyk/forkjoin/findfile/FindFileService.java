@@ -5,7 +5,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
 
 public class FindFileService {
@@ -19,7 +19,7 @@ public class FindFileService {
             throw new IllegalArgumentException("path should be folder");
         }
         this.path = path;
-        this.executor = Executors.newCachedThreadPool();
+        this.executor = new ForkJoinPool();
     }
 
     public void iterateFolder() {

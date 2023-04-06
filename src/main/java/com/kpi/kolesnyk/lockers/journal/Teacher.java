@@ -1,16 +1,12 @@
 package com.kpi.kolesnyk.lockers.journal;
 
-import java.util.LinkedList;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
+import java.util.Queue;
 
 public class Teacher implements Runnable {
-    private final LinkedList<Homework> queue;
-    private final Lock lock;
+    private final Queue<Homework> queue;
 
-    public Teacher(LinkedList<Homework> queue) {
+    public Teacher(Queue<Homework> queue) {
         this.queue = queue;
-        this.lock = new ReentrantLock();
     }
 
     @Override
@@ -28,11 +24,6 @@ public class Teacher implements Runnable {
     }
 
     private Homework readQueue() {
-        lock.lock();
-        try {
-            return queue.pollFirst();
-        } finally {
-            lock.unlock();
-        }
+        return queue.poll();
     }
 }

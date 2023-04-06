@@ -1,7 +1,8 @@
 package com.kpi.kolesnyk.lockers.journal;
 
-import java.util.LinkedList;
 import java.util.List;
+import java.util.Queue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 public class JournalMain {
     private static final Group it01 = new Group("IT-01");
@@ -18,8 +19,8 @@ public class JournalMain {
         System.out.println(parallelComputing);
     }
 
-    private static LinkedList<Homework> getStudentResults() {
-        return new LinkedList<>(List.of(
+    private static Queue<Homework> getStudentResults() {
+        return new LinkedBlockingQueue<>(List.of(
                 new Homework(it01, "roma", 10),
                 new Homework(it01, "roma", 40),
                 new Homework(it01, "roma", 80),
