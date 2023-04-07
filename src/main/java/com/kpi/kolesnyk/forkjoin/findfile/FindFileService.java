@@ -4,12 +4,13 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
 
 public class FindFileService {
-    public static final String KEYWORD = "information technology";
+    public static final List<String> KEYWORDS = List.of("information technology", "friday");
 
     private final Path path;
     private final ExecutorService executor;
@@ -46,7 +47,8 @@ public class FindFileService {
     private static void findKeywordInFile(File file) {
         try (var linesStream = Files.lines(file.toPath())) {
             linesStream
-                    .filter(line -> line.contains(KEYWORD))
+                    .filter(line -> KEYWORDS.stream()
+                            .anyMatch(line::contains))
                     .forEach(line -> System.out.printf("Found keyword in file [%s] in line [%s]%n",
                             file.getName(), line));
         } catch (IOException e) {

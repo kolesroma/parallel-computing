@@ -21,7 +21,7 @@ public class Group {
 
     public void addMark(String surname, Integer mark) {
         Queue<Integer> markList;
-        synchronized (journal) {
+        synchronized (surname) {
             markList = journal.get(surname);
             if (markList == null) {
                 journal.put(surname, new ConcurrentLinkedQueue<>(List.of(mark)));
