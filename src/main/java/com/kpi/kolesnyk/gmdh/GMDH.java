@@ -1,8 +1,6 @@
 package com.kpi.kolesnyk.gmdh;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
 public class GMDH {
     static double[] getColumn(double[][] data, int columnNumber) {
@@ -45,55 +43,94 @@ public class GMDH {
                 {9.01, 81.1801, 1713.806955}
         };
 
-        findB(inputMatrix);
+        Map<Matrix, ResultBean> candidates = new ModelContainer(inputMatrix).candidates;
+        candidates.keySet().forEach(candidate -> {
+            double regularityCriterion = findB(candidate);
+            candidates.get(candidate).setRegularityCriterion(regularityCriterion);
+        });
 
-//        List<Matrix> candidates = new ModelContainer(inputMatrix).candidates;
+        System.out.println("::::");
+        candidates.forEach((candidate, resultBean) -> {
+            System.out.println("regularityCriterion = " + resultBean.getRegularityCriterion());
+            System.out.println("b = ");
+            candidate.getB().print();
+            candidate.print();
+        });
+    }
 
-//        candidates.forEach(candidate -> findB(candidate.getValues()));
+    private static class ResultBean {
+
+        Double regularityCriterion;
+        Matrix B;
+
+        public ResultBean() {
+        }
+
+        public Double getRegularityCriterion() {
+            return regularityCriterion;
+        }
+
+        public void setRegularityCriterion(Double regularityCriterion) {
+            this.regularityCriterion = regularityCriterion;
+        }
+
+        public Matrix getB() {
+            return B;
+        }
+
+        public void setB(Matrix b) {
+            B = b;
+        }
     }
 
     static class ModelContainer {
-        List<Matrix> candidates = new ArrayList<>();
+        Map<Matrix, ResultBean> candidates = new LinkedHashMap<>();
 
         public ModelContainer(double[][] complexModel) {
             Matrix complexMatrix = new Matrix(complexModel);
 
-            candidates.add(MatrixMathematics.createSubMatrix(complexMatrix, 1, 1));
-            candidates.add(MatrixMathematics.createSubMatrix(complexMatrix, 1, 2));
-            candidates.add(complexMatrix);
+            appendMatrix(complexMatrix);
 
-//            candidates.add(nullColumn(complexMatrix, 1));
-//            candidates.add(nullColumn(complexMatrix, 2));
-//            candidates.add(complexMatrix);
+            appendMatrix(removeColumn(complexMatrix, 0));
+            appendMatrix(removeColumn(complexMatrix, 1));
         }
 
-        private Matrix nullColumn(Matrix complexMatrix, int columnNumber) {
-            double[][] values = complexMatrix.getValues();
-            double[][] collector = Arrays.copyOf(values, values.length);
-            for (var row : collector) {
-                row[columnNumber] = 0;
+        void appendMatrix(Matrix matrix) {
+            candidates.put(matrix, new ResultBean());
+        }
+
+        private Matrix removeColumn(Matrix complexMatrix, int columnNumber) {
+            return new Matrix(cloneWithNoColumn(complexMatrix.getValues(), columnNumber));
+        }
+
+        static double[][] cloneWithNoColumn(double[][] a, int columnNumber) {
+            double[][] b = new double[a.length][];
+            for (int i = 0; i < a.length; i++) {
+                b[i] = new double[a[i].length - 1];
+                for (int j = 0; j < a[i].length - 1; j++) {
+                    if (j >= columnNumber) {
+                        b[i][j] = a[i][j + 1];
+                    } else {
+                        b[i][j] = a[i][j];
+                    }
+                }
             }
-
-            Matrix matrix = new Matrix(collector);
-            System.out.println(">>>");
-            matrix.print();
-
-            return matrix;
+            return b;
         }
     }
 
-    private static void findB(double[][] inputMatrix) {
+    private static double findB(Matrix candidate) {
+        double[][] inputMatrix = candidate.getValues();
         final int n = inputMatrix.length;
-        double[][] testData = Arrays.copyOfRange(inputMatrix, 0, (n + 1) / 2);
+        double[][] trainData = Arrays.copyOfRange(inputMatrix, 0, (n + 1) / 2);
         double[][] checkData = Arrays.copyOfRange(inputMatrix, (n + 1) / 2, n);
-        inputMatrix = testData;
 
-        System.out.println("input matrix");
-        System.out.println(Arrays.deepToString(inputMatrix));
+        System.out.println("input train matrix");
+        System.out.println(Arrays.deepToString(trainData));
         System.out.println();
 
         System.out.println("X");
-        double[][] X = provideXMatrix(inputMatrix);
+        double[][] X = provideXMatrix(trainData);
         Matrix matrix = new Matrix(X);
         matrix.print();
 
@@ -114,15 +151,15 @@ public class GMDH {
         multiply1.print();
 
         System.out.println("Y");
-        Matrix Y = new Matrix(provideYMatrix(inputMatrix));
+        Matrix Y = new Matrix(provideYMatrix(trainData));
         Y.print();
 
         System.out.println("Xt * X ^ -1 * Xt * Y");
         Matrix b = MatrixMathematics.multiply(multiply1, Y);
         b.print();
+        candidate.setB(b);
 
-        double regularityCriterion = getRegularityCriterion(checkData, b);
-        System.out.println("regularityCriterion = " + regularityCriterion);
+        return getRegularityCriterion(checkData, b);
     }
 
     private static double getRegularityCriterion(double[][] checkData, Matrix b) {
@@ -151,6 +188,7 @@ class Matrix {
     private int nrows;
     private int ncols;
     private double[][] data;
+    Matrix B;
 
     public Matrix(double[][] dat) {
         this.data = dat;
@@ -193,6 +231,14 @@ class Matrix {
 
     public void setValues(double[][] values) {
         this.data = values;
+    }
+
+    public Matrix getB() {
+        return B;
+    }
+
+    public void setB(Matrix b) {
+        B = b;
     }
 
     public void setValueAt(int row, int col, double value) {
