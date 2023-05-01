@@ -43,60 +43,27 @@ public class GMDH {
                 {9.01, 81.1801, 1713.806955}
         };
 
-        Map<Matrix, ResultBean> candidates = new ModelContainer(inputMatrix).candidates;
-        candidates.keySet().forEach(candidate -> {
-            double regularityCriterion = findB(candidate);
-            candidates.get(candidate).setRegularityCriterion(regularityCriterion);
-        });
+        List<Matrix> candidates = new ModelContainer(inputMatrix).candidates;
+        candidates.forEach(GMDH::findB);
 
         System.out.println("::::");
-        candidates.forEach((candidate, resultBean) -> {
-            System.out.println("regularityCriterion = " + resultBean.getRegularityCriterion());
+        candidates.forEach(candidate -> {
+            System.out.println("regularityCriterion = " + candidate.getRegularityCriterion());
             System.out.println("b = ");
             candidate.getB().print();
             candidate.print();
         });
     }
 
-    private static class ResultBean {
-
-        Double regularityCriterion;
-        Matrix B;
-
-        public ResultBean() {
-        }
-
-        public Double getRegularityCriterion() {
-            return regularityCriterion;
-        }
-
-        public void setRegularityCriterion(Double regularityCriterion) {
-            this.regularityCriterion = regularityCriterion;
-        }
-
-        public Matrix getB() {
-            return B;
-        }
-
-        public void setB(Matrix b) {
-            B = b;
-        }
-    }
-
     static class ModelContainer {
-        Map<Matrix, ResultBean> candidates = new LinkedHashMap<>();
+        List<Matrix> candidates = new LinkedList<>();
 
         public ModelContainer(double[][] complexModel) {
             Matrix complexMatrix = new Matrix(complexModel);
+            candidates.add(complexMatrix);
 
-            appendMatrix(complexMatrix);
-
-            appendMatrix(removeColumn(complexMatrix, 0));
-            appendMatrix(removeColumn(complexMatrix, 1));
-        }
-
-        void appendMatrix(Matrix matrix) {
-            candidates.put(matrix, new ResultBean());
+            candidates.add(removeColumn(complexMatrix, 0));
+            candidates.add(removeColumn(complexMatrix, 1));
         }
 
         private Matrix removeColumn(Matrix complexMatrix, int columnNumber) {
@@ -119,7 +86,7 @@ public class GMDH {
         }
     }
 
-    private static double findB(Matrix candidate) {
+    private static void findB(Matrix candidate) {
         double[][] inputMatrix = candidate.getValues();
         final int n = inputMatrix.length;
         double[][] trainData = Arrays.copyOfRange(inputMatrix, 0, (n + 1) / 2);
@@ -159,10 +126,10 @@ public class GMDH {
         b.print();
         candidate.setB(b);
 
-        return getRegularityCriterion(checkData, b);
+        candidate.setRegularityCriterion(calculateRegularityCriterion(checkData, b));
     }
 
-    private static double getRegularityCriterion(double[][] checkData, Matrix b) {
+    private static double calculateRegularityCriterion(double[][] checkData, Matrix b) {
         Matrix checkXMatrix = new Matrix(provideXMatrix(checkData));
         Matrix checkYMatrix = new Matrix(provideYMatrix(checkData));
         Matrix multipliedCheckXAndB = MatrixMathematics.multiply(checkXMatrix, b);
@@ -189,6 +156,7 @@ class Matrix {
     private int ncols;
     private double[][] data;
     Matrix B;
+    Double regularityCriterion;
 
     public Matrix(double[][] dat) {
         this.data = dat;
@@ -239,6 +207,14 @@ class Matrix {
 
     public void setB(Matrix b) {
         B = b;
+    }
+
+    public Double getRegularityCriterion() {
+        return regularityCriterion;
+    }
+
+    public void setRegularityCriterion(Double regularityCriterion) {
+        this.regularityCriterion = regularityCriterion;
     }
 
     public void setValueAt(int row, int col, double value) {
