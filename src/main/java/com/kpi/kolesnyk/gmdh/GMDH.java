@@ -1,5 +1,7 @@
 package com.kpi.kolesnyk.gmdh;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.*;
 
 public class GMDH {
@@ -32,6 +34,7 @@ public class GMDH {
     }
 
     public static void main(String[] args) {
+        Instant start = Instant.now();
         double[][] inputMatrix = {
                 {5.2, 27.04, 603.552},
                 {9.3, 86.49, 1821.5595},
@@ -43,7 +46,19 @@ public class GMDH {
                 {9.01, 81.1801, 1713.806955}
         };
 
-        List<Matrix> candidates = new ModelContainer(inputMatrix).candidates;
+        double[][] inputMatrixBig = {
+                {0.12, 0.87, 0.34, 0.56, 0.91, 0.78, 0.43, 0.23, 0.65, 0.76},
+                {0.45, 0.67, 0.98, 0.23, 0.76, 0.54, 0.32, 0.89, 0.12, 0.41},
+                {0.76, 0.34, 0.21, 0.65, 0.43, 0.98, 0.76, 0.12, 0.54, 0.67},
+                {0.98, 0.23, 0.67, 0.12, 0.54, 0.76, 0.21, 0.45, 0.89, 0.32},
+                {0.23, 0.45, 0.54, 0.87, 0.65, 0.32, 0.12, 0.98, 0.76, 0.21},
+                {0.87, 0.65, 0.76, 0.54, 0.12, 0.23, 0.67, 0.34, 0.21, 0.98},
+                {0.65, 0.12, 0.43, 0.89, 0.21, 0.67, 0.98, 0.76, 0.32, 0.54},
+                {0.34, 0.56, 0.23, 0.76, 0.98, 0.21, 0.45, 0.67, 0.98, 0.12},
+                {0.56, 0.76, 0.89, 0.32, 0.54, 0.12, 0.87, 0.21, 0.43, 0.65}
+        };
+
+        Set<Matrix> candidates = new ModelContainer(inputMatrix).candidates;
         candidates.forEach(GMDH::findB);
 
         System.out.println("::::");
@@ -53,17 +68,34 @@ public class GMDH {
             candidate.getB().print();
             candidate.print();
         });
+        System.out.printf("time elapsed = %d ms", Duration.between(start, Instant.now()).toMillis());
     }
 
     static class ModelContainer {
-        List<Matrix> candidates = new LinkedList<>();
+        Set<Matrix> candidates = new LinkedHashSet<>();
 
         public ModelContainer(double[][] complexModel) {
-            Matrix complexMatrix = new Matrix(complexModel);
-            candidates.add(complexMatrix);
+            simplifyComplexMatrix(new Matrix(complexModel));
+        }
 
-            candidates.add(removeColumn(complexMatrix, 0));
-            candidates.add(removeColumn(complexMatrix, 1));
+        /**
+         * @param complexMatrix example
+         *        x  |  x^2 |    y
+         * [
+         *      [5.2, 27.04, 603.552],
+         *      [9.3, 86.49, 1821.5595],
+         *      [149.0, 22201.0, 436060.15]
+         * ]
+         */
+        void simplifyComplexMatrix(Matrix complexMatrix) {
+            candidates.add(complexMatrix);
+            int basedFunctions = complexMatrix.getNcols() - 1;
+            if (basedFunctions <= 1) {
+                return;
+            }
+            for (int columnNumber = 0; columnNumber < basedFunctions; columnNumber++) {
+                simplifyComplexMatrix(removeColumn(complexMatrix, columnNumber));
+            }
         }
 
         private Matrix removeColumn(Matrix complexMatrix, int columnNumber) {
