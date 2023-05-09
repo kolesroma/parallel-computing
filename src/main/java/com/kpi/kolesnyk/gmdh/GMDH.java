@@ -2,7 +2,10 @@ package com.kpi.kolesnyk.gmdh;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.*;
+import java.util.Arrays;
+import java.util.LinkedHashSet;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 public class GMDH {
     static double[] getColumn(double[][] data, int columnNumber) {
@@ -47,27 +50,28 @@ public class GMDH {
         };
 
         double[][] inputMatrixBig = {
-                {0.142, 0.827, 0.334, 0.546, 0.911, 0.784, 0.438, 0.568, 0.223},
-                {0.445, 0.627, 0.938, 0.243, 0.716, 0.544, 0.328, 0.238, 0.819},
-                {0.746, 0.324, 0.231, 0.645, 0.413, 0.984, 0.768, 0.658, 0.132},
-                {0.948, 0.223, 0.637, 0.142, 0.514, 0.764, 0.218, 0.128, 0.455},
-                {0.243, 0.425, 0.534, 0.847, 0.615, 0.324, 0.128, 0.878, 0.968},
-                {0.847, 0.625, 0.736, 0.544, 0.112, 0.234, 0.678, 0.548, 0.315},
-                {0.645, 0.122, 0.433, 0.849, 0.211, 0.674, 0.988, 0.898, 0.736},
-                {0.344, 0.526, 0.233, 0.746, 0.918, 0.214, 0.458, 0.768, 0.64447},
-                {0.546, 0.726, 0.839, 0.342, 0.514, 0.124, 0.878, 0.328, 0.2441}
+                {5.2, 27.04, 140.608, 856.6464},
+                {9.3, 86.49, 804.357, 3269.4021},
+                {149, 22201, 3307949, 6390368.35},
+                {-90.6, 8208.36, -743677.416, -1179373.8708},
+                {142.9, 20420.41, 2918076.589, 5653704.5157},
+                {-300.1, 90060.01, -27027009.001, -46892020.1663},
+                {3, 9, 27, 269.55},
+                {9.01, 81.1801, 731.432701, 3030.3858168}
         };
 
         Set<Matrix> candidates = new ModelContainer(inputMatrixBig).candidates;
-        candidates.stream()
-                .parallel()
-                .forEach(GMDH::findB);
+        candidates = candidates.stream()
+//                .limit(1)
+                .map(GMDH::findB)
+                .collect(Collectors.toSet());
 
         System.out.println("::::");
         candidates.forEach(candidate -> {
             System.out.println("regularityCriterion = " + candidate.getRegularityCriterion());
             System.out.println("b = ");
             candidate.getB().print();
+            System.out.println("matrix = ");
             candidate.print();
         });
         System.out.printf("time elapsed = %d ms", Duration.between(start, Instant.now()).toMillis());
@@ -82,12 +86,12 @@ public class GMDH {
 
         /**
          * @param complexMatrix example
-         *        x  |  x^2 |    y
-         * [
-         *      [5.2, 27.04, 603.552],
-         *      [9.3, 86.49, 1821.5595],
-         *      [149.0, 22201.0, 436060.15]
-         * ]
+         *                      x  |  x^2 |    y
+         *                      [
+         *                      [5.2, 27.04, 603.552],
+         *                      [9.3, 86.49, 1821.5595],
+         *                      [149.0, 22201.0, 436060.15]
+         *                      ]
          */
         void simplifyComplexMatrix(Matrix complexMatrix) {
             candidates.add(complexMatrix);
@@ -120,7 +124,7 @@ public class GMDH {
         }
     }
 
-    private static void findB(Matrix candidate) {
+    private static Matrix findB(Matrix candidate) {
         double[][] inputMatrix = candidate.getValues();
         final int n = inputMatrix.length;
         double[][] trainData = Arrays.copyOfRange(inputMatrix, 0, (n + 1) / 2);
@@ -161,6 +165,7 @@ public class GMDH {
         candidate.setB(b);
 
         candidate.setRegularityCriterion(calculateRegularityCriterion(checkData, b));
+        return candidate;
     }
 
     private static double calculateRegularityCriterion(double[][] checkData, Matrix b) {
