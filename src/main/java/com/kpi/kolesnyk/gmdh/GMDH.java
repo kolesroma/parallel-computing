@@ -9,66 +9,59 @@ import java.util.stream.Collectors;
 public class GMDH {
     public static final double REGULARITY_CRITERION_THRESHOLD = 0.05;
 
+    private final ForkJoinPool pool = new ForkJoinPool();
+
     public static void main(String[] args) {
         Instant start = Instant.now();
-        double[][] inputMatrix = {
-                {5.2, 27.04, 603.552},
-                {9.3, 86.49, 1821.5595},
-                {149, 22201, 436060.15},
-                {-90.6, 8208.36, 159245.478},
-                {142.9, 20420.41, 401166.6555},
-                {-300.1, 90060.01, 1756596.0355},
-                {3, 9, 220.95},
-                {9.01, 81.1801, 1713.806955}
-        };
-
         double[][] inputMatrixBig = {
-                {915.20, 1915.20, 27.04, 927.04, 140.61, 731.16, 32.66, 7053.91, 70253.91, 7023253.91},
-                {919.30, 1919.30, 86.49, 986.49, 804.36, 7480.52, 29.20, 69622.42, 696222.42, 69236222.42},
-                {9111.90, 19111.90, 141.61, 9141.61, 1685.16, 20053.39, 18.68, 185510.01, 1855210.01, 182355210.01},
-                {919.06, 1919.06, 82.08, 982.08, -743.68, 6737.72, -56.90, 64782.66, 647282.66, 64237282.66},
-                {911.43, 1911.43, 2.04, 92.04, 2.92, 4.17, 4.49, 84.00, 284.00, 28234.00},
-                {913.90, 1913.90, 15.22, 915.22, -59.36, 231.58, -6.12, 2482.62, 24282.62, 2423282.62},
-                {913.10, 1913.10, 9.61, 99.61, 29.79, 92.35, 19.47, 984.67, 9284.67, 922384.67},
-                {919.01, 1919.01, 81.18, 981.18, 731.43, 6590.21, 28.29, 61406.58, 614206.58, 61234206.58},
-                {9114.39, 19114.39, 207.07, 9207.07, 2979.77, 42878.85, 22.59, 395527.37, 3955227.37, 392355227.37},
-                {912.99, 1912.99, 8.95, 98.95, -26.76, 80.03, -18.78, 971.15, 9271.15, 922371.15},
-                {914.10, 1914.10, 16.81, 916.81, 68.92, 282.58, 12.87, 2861.17, 28261.17, 2823261.17},
-                {9110.01, 19110.01, 100.20, 9100.20, 1003.00, 10040.06, 15.72, 93275.23, 932275.2, 93232275.23}
+                {5.20, 27.04, 140.61, 731.16, 32.66, 7053.91},
+                {9.30, 86.49, 804.36, 7480.52, 29.20, 69622.42},
+                {11.90, 141.61, 1685.16, 20053.39, 18.68, 185510.01},
+                {-9.06, 82.08, -743.68, 6737.72, -56.90, 64782.66},
+                {1.43, 2.04, 2.92, 4.17, 4.49, 84.00},
+                {-3.90, 15.22, -59.36, 231.58, -6.12, 2482.62},
+                {3.10, 9.61, 29.79, 92.35, 19.47, 984.67},
+                {9.01, 81.18, 731.43, 6590.21, 28.29, 61406.58},
+                {14.39, 207.07, 2979.77, 42878.85, 22.59, 395527.37},
+                {-2.99, 8.95, -26.76, 80.03, -18.78, 971.15},
+                {4.10, 16.81, 68.92, 282.58, 12.87, 2861.17},
+                {10.01, 100.20, 1003.00, 10040.06, 15.72, 93275.23}
         };
 
-        ForkJoinPool pool = new ForkJoinPool();
-        List<Callable<Matrix>> allCandidates = new ModelContainer(inputMatrixBig)
-                .getCandidates()
-                .stream()
-                .map(candidate -> (Callable<Matrix>) () -> findB(candidate))
-                .toList();
-
+        List<Callable<Matrix>> allCandidates = getAllCandidates(inputMatrixBig);
         System.out.println("total models = " + allCandidates.size());
-        Set<Matrix> approvedCandidates = pool.invokeAll(allCandidates)
+        Set<Matrix> approvedCandidates = getApprovedCandidates(allCandidates);
+        printCandidateStatistics(approvedCandidates);
+        System.out.printf("time elapsed = %d ms", Duration.between(start, Instant.now()).toMillis());
+    }
+
+    private static Set<Matrix> getApprovedCandidates(List<Callable<Matrix>> allCandidates) {
+        return new GMDH().getPool()
+                .invokeAll(allCandidates)
                 .stream()
-                .map(matrixFuture -> {
-                    try {
-                        return matrixFuture.get();
-                    } catch (InterruptedException | ExecutionException e) {
-                        throw new RuntimeException(e);
-                    }
-                })
+                .map(GMDH::mapFutureToMatrix)
                 .filter(candidate -> candidate.getRegularityCriterion() <= REGULARITY_CRITERION_THRESHOLD)
                 .sorted(Comparator.comparing(Matrix::getRegularityCriterion))
                 .collect(Collectors.toCollection(LinkedHashSet::new));
+    }
 
-//        Set<Matrix> approvedCandidates = new ModelContainer(inputMatrixBig)
-//                .getCandidates()
-//                .stream()
-//                .map(GMDH::findB)
-//                .filter(candidate -> candidate.getRegularityCriterion() <= REGULARITY_CRITERION_THRESHOLD)
-//                .sorted(Comparator.comparing(Matrix::getRegularityCriterion))
-//                .collect(Collectors.toCollection(LinkedHashSet::new));
+    private static List<Callable<Matrix>> getAllCandidates(double[][] inputMatrixBig) {
+        return new ModelContainer(inputMatrixBig).getCandidates()
+                .stream()
+                .map(candidate -> (Callable<Matrix>) () -> findB(candidate))
+                .toList();
+    }
 
-        pool.close();
-        printCandidateStatistics(approvedCandidates);
-        System.out.printf("time elapsed = %d ms", Duration.between(start, Instant.now()).toMillis());
+    public ForkJoinPool getPool() {
+        return pool;
+    }
+
+    private static Matrix mapFutureToMatrix(Future<Matrix> matrixFuture) {
+        try {
+            return matrixFuture.get();
+        } catch (InterruptedException | ExecutionException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private static void printCandidateStatistics(Set<Matrix> candidates) {
