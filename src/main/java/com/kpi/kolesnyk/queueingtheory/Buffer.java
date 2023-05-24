@@ -25,7 +25,7 @@ public class Buffer {
         }
     }
 
-    public int getSize() {
+    public synchronized int getSize() {
         return this.size;
     }
 }
