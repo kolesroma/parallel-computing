@@ -17,20 +17,43 @@ public class Gmdh {
         this.approvedCandidates = calculateApprovedCandidatesInParallel();
     }
 
-    private Set<Matrix> calculateApprovedCandidatesInParallel() {
-        return pool.invokeAll(getTaskList())
+    public Gmdh(double[][] tableData) {
+        this.candidateContainer = new CandidateContainer(tableData);
+        this.pool = null;
+        this.approvedCandidates = calculateApprovedCandidatesSequential();
+    }
+
+    private Set<Matrix> calculateApprovedCandidatesSequential() {
+        return getCallableList()
                 .stream()
-                .map(Gmdh::mapFutureToMatrix)
+                .map(Gmdh::mapCallableToMatrix)
                 .filter(candidate -> candidate.getRegularityCriterion() <= REGULARITY_CRITERION_THRESHOLD)
                 .sorted(Comparator.comparing(Matrix::getRegularityCriterion))
                 .collect(Collectors.toCollection(LinkedHashSet::new));
     }
 
-    private List<Callable<Matrix>> getTaskList() {
+    private static Matrix mapCallableToMatrix(Callable<Matrix> candidateTask) {
+        try {
+            return candidateTask.call();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private List<Callable<Matrix>> getCallableList() {
         return getAllCandidates()
                 .stream()
                 .map(candidate -> (Callable<Matrix>) () -> findB(candidate))
                 .toList();
+    }
+
+    private Set<Matrix> calculateApprovedCandidatesInParallel() {
+        return pool.invokeAll(getCallableList())
+                .stream()
+                .map(Gmdh::mapFutureToMatrix)
+                .filter(candidate -> candidate.getRegularityCriterion() <= REGULARITY_CRITERION_THRESHOLD)
+                .sorted(Comparator.comparing(Matrix::getRegularityCriterion))
+                .collect(Collectors.toCollection(LinkedHashSet::new));
     }
 
     private static Matrix mapFutureToMatrix(Future<Matrix> matrixFuture) {
