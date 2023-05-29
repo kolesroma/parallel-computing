@@ -24,9 +24,9 @@ public class Gmdh {
     }
 
     private Set<Matrix> calculateApprovedCandidatesSequential() {
-        return getCallableList()
+        return getAllCandidates()
                 .stream()
-                .map(Gmdh::mapCallableToMatrix)
+                .map(Gmdh::findB)
                 .filter(candidate -> candidate.getRegularityCriterion() <= REGULARITY_CRITERION_THRESHOLD)
                 .sorted(Comparator.comparing(Matrix::getRegularityCriterion))
                 .collect(Collectors.toCollection(LinkedHashSet::new));
@@ -102,8 +102,8 @@ public class Gmdh {
     private static Matrix findB(Matrix candidate) {
         double[][] inputMatrix = candidate.getValues();
         final int n = inputMatrix.length;
-        double[][] trainData = Arrays.copyOfRange(inputMatrix, 0, (n + 1) / 2);
-        double[][] checkData = Arrays.copyOfRange(inputMatrix, (n + 1) / 2, n);
+        double[][] trainData = Arrays.copyOfRange(inputMatrix, 0, 2 * (n + 1) / 3);
+        double[][] checkData = Arrays.copyOfRange(inputMatrix, 2 * (n + 1) / 3, n);
 
         double[][] X = provideXMatrix(trainData);
         Matrix matrix = new Matrix(X);
